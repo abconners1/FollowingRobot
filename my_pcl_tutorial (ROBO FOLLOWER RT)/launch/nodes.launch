@@ -1,0 +1,6 @@
+<launch>
+
+<node pkg="my_pcl_tutorial" type="my_pcl_tutorial" name="xyzpass" output="screen"/>
+<node pkg="my_pcl_tutorial" type="my_pcl_tutorial" name="centroid" output="screen"/>
+
+</launch>

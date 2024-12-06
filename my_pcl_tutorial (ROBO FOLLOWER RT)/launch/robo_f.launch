@@ -1,0 +1,19 @@
+<launch>
+
+<node name="rviz1" pkg="rviz" type="rviz" args="-d $(find my_pcl_tutorial)/rviz/robot1.rviz" />
+<node name="rviz2" pkg="rviz" type="rviz" args="-d $(find my_pcl_tutorial)/rviz/robot2.rviz" />
+
+
+
+<remap from="/cloud_in" to="camera/depth_registered/points"/>
+
+<node pkg="my_pcl_tutorial" type="my_pcl_tutorial" name="xyzpass" output="screen"/>
+
+<remap from="/output" to="/cloud_in"/>
+
+<node pkg="my_pcl_tutorial" type="my_pcl_tutorial" name="centroid" output="screen"/>
+
+
+
+
+</launch>

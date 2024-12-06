@@ -1,0 +1,6 @@
+<launch>
+
+<node name="rviz1" pkg="rviz" type="rviz" args="-d $(find my_pcl_tutorial)/rviz/robot1.rviz" />
+<node name="rviz2" pkg="rviz" type="rviz" args="-d $(find my_pcl_tutorial)/rviz/robot2.rviz" />
+
+</launch>
