@@ -1,38 +1,40 @@
-#include <ros/ros.h>
-// PCL specific includes
-#include <sensor_msgs/PointCloud2.h>
-#include <pcl_conversions/pcl_conversions.h>
-#include <pcl/point_cloud.h>
-#include <pcl/point_types.h>
+#include <ros/ros.h> // ROS core functionalities
+// PCL (Point Cloud Library) specific includes
+#include <sensor_msgs/PointCloud2.h> // ROS message type for point cloud data
+#include <pcl_conversions/pcl_conversions.h> // Conversions between PCL and ROS data types
+#include <pcl/point_cloud.h> // Core data type for point clouds
+#include <pcl/point_types.h> // Common point types like pcl::PointXYZ
 
-ros::Publisher pub;
+ros::Publisher pub; // ROS publisher to publish processed point cloud data
 
-void 
-cloud_cb (const sensor_msgs::PointCloud2ConstPtr& input)
+// Callback function to process incoming point cloud data
+void cloud_cb (const sensor_msgs::PointCloud2ConstPtr& input)
 {
-  // Create a container for the data.
+  // Create a container for the output point cloud
   sensor_msgs::PointCloud2 output;
 
-  // Do data processing here...
-  output = *input;
+  // Do data processing here (currently, no modifications are made)
+  output = *input; // Simply copy the input point cloud to the output container
 
-  // Publish the data.
-  pub.publish (output);
+  // Publish the processed (or unmodified) point cloud data
+  pub.publish(output);
 }
 
-int
-main (int argc, char** argv)
+int main (int argc, char** argv)
 {
-  // Initialize ROS
-  ros::init (argc, argv, "example");
-  ros::NodeHandle nh;
+  // Initialize the ROS node
+  ros::init(argc, argv, "example"); // Node name: "example"
+  ros::NodeHandle nh; // Create a node handle for communication
 
-  // Create a ROS subscriber for the input point cloud
-  ros::Subscriber sub = nh.subscribe ("cloud_in", 1, cloud_cb);
+  // Subscribe to the "cloud_in" topic to receive point cloud data
+  // The callback function `cloud_cb` will be invoked whenever new data is received
+  ros::Subscriber sub = nh.subscribe("cloud_in", 1, cloud_cb);
 
-  // Create a ROS publisher for the output point cloud
-  pub = nh.advertise<sensor_msgs::PointCloud2> ("output", 1);
+  // Advertise a topic "output" to publish processed point cloud data
+  pub = nh.advertise<sensor_msgs::PointCloud2>("output", 1);
 
-  // Spin
-  ros::spin ();
+  // Keep the node running and responsive to callbacks
+  ros::spin();
+
+  return 0; // Exit the program (this line won't be reached due to ros::spin())
 }
