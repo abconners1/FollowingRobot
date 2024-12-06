@@ -1,91 +1,78 @@
-#include <ros/ros.h>
-// PCL specific includes
-#include <sensor_msgs/PointCloud2.h>
-#include <pcl_conversions/pcl_conversions.h>
-// #include <pcl/ros/conversions.h>
-#include <pcl/conversions.h>
-#include <pcl/point_cloud.h>
-#include <pcl/point_types.h>
-#include <pcl_ros/point_cloud.h>
-#include <pcl/sample_consensus/model_types.h>
-#include <pcl/sample_consensus/method_types.h>
-#include <pcl/segmentation/sac_segmentation.h>
-#include <iostream>
-//specific to cylinder segmentation
-#include <pcl/ModelCoefficients.h>
-#include <pcl/io/pcd_io.h>
-#include <pcl/filters/extract_indices.h>
-#include <pcl/filters/passthrough.h>
-#include <pcl/features/normal_3d.h>
+#include <ros/ros.h> // ROS core functionalities
+// PCL (Point Cloud Library) specific includes
+#include <sensor_msgs/PointCloud2.h> // ROS message type for point cloud data
+#include <pcl_conversions/pcl_conversions.h> // Conversions between PCL and ROS data types
+// #include <pcl/ros/conversions.h> // Deprecated; replaced with pcl_conversions
+#include <pcl/conversions.h> // Additional conversions within PCL
+#include <pcl/point_cloud.h> // Core data type for point clouds
+#include <pcl/point_types.h> // Common point types like pcl::PointXYZ
+#include <pcl_ros/point_cloud.h> // Integration of PCL with ROS
+#include <pcl/sample_consensus/model_types.h> // Model types for segmentation
+#include <pcl/sample_consensus/method_types.h> // Methods for segmentation (e.g., RANSAC)
+#include <pcl/segmentation/sac_segmentation.h> // Segmentation algorithms
+#include <iostream> // Standard input/output library
 
+// Specific to cylinder segmentation
+#include <pcl/ModelCoefficients.h> // Represents model coefficients
+#include <pcl/io/pcd_io.h> // Input/output operations for PCD files
+#include <pcl/filters/extract_indices.h> // Extract points based on indices
+#include <pcl/filters/passthrough.h> // Filter points based on a range of values
+#include <pcl/features/normal_3d.h> // Compute surface normals
 
-using namespace std;
+using namespace std; // Simplifies standard library usage
 
-ros::Publisher pub;
+ros::Publisher pub; // ROS publisher to publish processed data
 
-void 
-cloud_cb (const sensor_msgs::PointCloud2ConstPtr& input)
+// Callback function to process incoming point cloud data
+void cloud_cb (const sensor_msgs::PointCloud2ConstPtr& input)
 {
-  // Convert the sensor_msgs/PointCloud2 data to pcl/PointCloud
-  pcl::PointCloud<pcl::PointXYZ> cloud; // vs. pcl::PointCloud<pcl::PointXYZ>::Ptr cloud(new pcl::PointCloud<pcl::PointXYZ>);
-  pcl::fromROSMsg (*input, cloud);
+  // Convert the ROS PointCloud2 message to a PCL point cloud
+  pcl::PointCloud<pcl::PointXYZ> cloud;
+  pcl::fromROSMsg(*input, cloud);
 
-  pcl::ModelCoefficients coefficients; // vs. pcl::ModelCoefficients::Ptr coefficients (new pcl::ModelCoefficients);
-  pcl::PointIndices inliers; // vs   pcl::PointIndices::Ptr inliers (new pcl::PointIndices);
+  // Variables for storing segmentation results
+  pcl::ModelCoefficients coefficients; // Coefficients of the segmented model
+  pcl::PointIndices inliers; // Indices of points that belong to the model
 
   // Create the segmentation object
   pcl::SACSegmentation<pcl::PointXYZ> seg;
-  //pcl::SACSegmentationFromNormals<PointT, pcl::Normal> seg; //another version of cylinder tutorial --doesnt work
-  
-  //=============PLANE================================
-  // Optional
-  seg.setOptimizeCoefficients (true);
-  // seg.setRadiusLimits(.5,1);
-    // Mandatory
-  seg.setModelType (pcl::SACMODEL_PLANE);
-  // seg.setModelType (pcl::SACMODEL_CYLINDER);
-  seg.setMethodType (pcl::SAC_RANSAC);
-  seg.setDistanceThreshold (0.01);
-  //=====================================================
 
-  //===========CYLINDER, DOESNT WORK======================
- // Create the segmentation object for cylinder segmentation and set all the parameters
-/*  seg.setOptimizeCoefficients (true);
-  seg.setModelType (pcl::SACMODEL_CYLINDER);
-  seg.setMethodType (pcl::SAC_RANSAC);
-  seg.setNormalDistanceWeight (0.1);
-  seg.setMaxIterations (10000);
-  seg.setDistanceThreshold (0.05);
-  seg.setRadiusLimits (0, 0.1);*/
-  //======================================================
+  // Configure segmentation for plane detection
+  seg.setOptimizeCoefficients(true); // Optimize the model coefficients
+  seg.setModelType(pcl::SACMODEL_PLANE); // Model type: Plane
+  seg.setMethodType(pcl::SAC_RANSAC); // Segmentation method: RANSAC
+  seg.setDistanceThreshold(0.01); // Maximum allowable distance for a point to be considered an inlier
 
-  seg.setInputCloud (cloud.makeShared ()); // vs. seg.setInputCloud (cloud); I wonder why ROS likes this as a shared pointer?
-  seg.segment (inliers, coefficients); // vs. seg.segment (*inliers, *coefficients);
-  
+  // Set the input cloud for segmentation
+  seg.setInputCloud(cloud.makeShared()); // Convert to shared pointer for compatibility
+  seg.segment(inliers, coefficients); // Perform segmentation and store results in `inliers` and `coefficients`
+
   // Publish the model coefficients
-  coefficients.values[1] = 45;
-  cout << " first coeff is " << coefficients.values[1] << "\n";
+  coefficients.values[1] = 45; // Example modification to the coefficients
+  cout << "First coefficient is " << coefficients.values[1] << "\n";
 
-
+  // Convert the coefficients to ROS message format
   pcl_msgs::ModelCoefficients ros_coefficients;
   pcl_conversions::fromPCL(coefficients, ros_coefficients);
-  pub.publish (ros_coefficients);
+
+  // Publish the coefficients
+  pub.publish(ros_coefficients);
 }
 
-int
-main (int argc, char** argv)
+int main (int argc, char** argv)
 {
-  // Initialize ROS
-  ros::init (argc, argv, "plane");
-  ros::NodeHandle nh;
+  // Initialize the ROS node
+  ros::init(argc, argv, "plane"); // Node name: "plane"
+  ros::NodeHandle nh; // Create a node handle for communication
 
-  // Create a ROS subscriber for the input point cloud
-  // ros::Subscriber sub = nh.subscribe ("cloud_in", 1, cloud_cb);
-  ros::Subscriber sub = nh.subscribe ("/camera/depth_registered/points", 1, cloud_cb);
+  // Subscribe to a topic to receive point cloud data
+  ros::Subscriber sub = nh.subscribe("/camera/depth_registered/points", 1, cloud_cb);
 
-  // Create a ROS publisher for the output model coefficients
-  pub = nh.advertise<pcl_msgs::ModelCoefficients> ("output", 1);
+  // Advertise a topic to publish the segmentation results
+  pub = nh.advertise<pcl_msgs::ModelCoefficients>("output", 1);
 
-  // Spin
-  ros::spin ();
+  // Keep the node running and responsive to callbacks
+  ros::spin();
+
+  return 0; // Exit the program (this line won’t be reached due to `ros::spin()`)
 }
